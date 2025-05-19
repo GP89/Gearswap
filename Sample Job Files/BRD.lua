@@ -16,6 +16,9 @@ Food = "Tropical Crepe"
 state.WeaponMode:options('Mordant Rime','Aeolian Edge','Shining Strike','Shining Blade','Savage Blade','Eviceration','Rudra\'s Storm','Staff')
 state.WeaponMode:set('Mordant Rime')
 
+--Default for weapon lock
+state.WeaponLock:set('OFF')
+
 --Default to DT Mode
 state.OffenseMode:set('TP')
 

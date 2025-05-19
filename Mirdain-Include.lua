@@ -974,11 +974,15 @@ do
 		-- If it set to unlocked it will not swap the weapons even if defined in the built_set job lua
 		if state.WeaponMode.value ~= "Unlocked" then
 			if state.WeaponMode.value == "Locked" or state.WeaponLock.value == "ON" then
-				built_set = set_combine(built_set, { main = player.equipment.main, sub = player.equipment.sub, range = player.equipment.range})
+				local currentWeapons = { main = player.equipment.main, sub = player.equipment.sub }
+				if spell.type ~= 'BardSong' then -- Allow bard instruments to change
+					currentWeapons['range'] = player.equipment.range
+				end
+				built_set = set_combine(built_set, currentWeapons)
 			else
 				if sets.Weapons then
 					if sets.Weapons[state.WeaponMode.value] then
-						local defaultWeapons = sets.Weapons[state.WeaponMode.value]
+						local defaultWeapons = set_combine(sets.Weapons[state.WeaponMode.value], {}) -- copy the set
 						if not TwoHand and not DualWield then
 							if sets.Weapons.Shield then
 								defaultWeapons = set_combine(defaultWeapons, sets.Weapons.Shield)
@@ -992,7 +996,7 @@ do
 			end
 		end
 		--Swap in bard song weapons no matter the mode
-		if spell.type == 'BardSong' and spell.target.type ~= 'MONSTER' then
+		if spell.type == 'BardSong' and spell.target.type ~= 'MONSTER' and state.WeaponLock.value ~= 'ON' then
 			if sets.Weapons then
 				if sets.Weapons.Songs then
 					built_set = set_combine(built_set, sets.Weapons.Songs)
@@ -1561,24 +1565,32 @@ do
 		if state.WeaponMode.value ~= "Unlocked" then
 			if spell.type == 'Geomancy' then
 				log('Swap Weapon due to Geomancy')
-			elseif state.WeaponMode.value == "Locked" then
-				built_set = set_combine(built_set, { main=player.equipment.main, sub = player.equipment.sub, range = player.equipment.range})
+			elseif state.WeaponMode.value == "Locked" or state.WeaponLock.value == "ON" then
+				local currentWeapons = { main = player.equipment.main, sub = player.equipment.sub }
+				if spell.type ~= 'BardSong' then -- Allow bard instruments to change
+					currentWeapons['range'] = player.equipment.range
+				end
+				built_set = set_combine(built_set, currentWeapons)
 				log(built_set)
 			else
 				if sets.Weapons then
 					if sets.Weapons[state.WeaponMode.value] then
-						built_set = set_combine(built_set, sets.Weapons[state.WeaponMode.value])
+						local defaultWeapons = sets.Weapons[state.WeaponMode.value]
+
+						if not TwoHand and not DualWield then
+							if sets.Weapons.Shield then
+								defaultWeapons = set_combine(defaultWeapons, sets.Weapons.Shield)
+							else warn('sets.Weapons.Shield not found!') end
+						end
+						for slot, item in pairs(defaultWeapons) do
+							built_set[slot] = built_set[slot] or defaultWeapons[slot] -- Take main/sub if in built_set, if not put in the defined default
+						end
 					else warn('sets.Weapons['..state.WeaponMode.value..'] not found!') end
-					if not TwoHand and not DualWield then
-						if sets.Weapons.Shield then
-							built_set = set_combine(built_set, sets.Weapons.Shield)
-						else warn('sets.Weapons.Shield not found!') end
-					end
 				else warn('sets.Weapons not found!') end
 			end
 		end
 		--Swap in bard song weapons no matter the mode
-		if spell.type == 'BardSong' and spell.target.type ~= 'MONSTER' then
+		if spell.type == 'BardSong' and spell.target.type ~= 'MONSTER' and state.WeaponLock.value ~= 'ON' then
 			if sets.Weapons.Songs then
 				built_set = set_combine(built_set, sets.Weapons.Songs)
 				if sets.Weapons.Songs.Midcast then
@@ -1771,7 +1783,7 @@ do
 
 	function pet_midcast(spell)
 		if sets.Pet_Midcast then
-			local built_set = sets.Pet_Midcast
+			local built_set = set_combine(sets.Pet_Midcast, {}) -- copy the set
 			-- Specific sets are defined
 			if built_set[spell.english] then
 				built_set = set_combine(built_set, built_set[spell.english])
@@ -1784,17 +1796,22 @@ do
 			-- Weapon Checks for precast
 			-- If it set to unlocked it will not swap the weapons even if defined in the built_set job lua
 			if state.WeaponMode.value ~= "Unlocked" then
-				if state.WeaponMode.value == "Locked" then
+				if state.WeaponMode.value == "Locked" or state.WeaponLock.value == "ON" then
 					built_set = set_combine(built_set, { main=player.equipment.main, sub = player.equipment.sub, range = player.equipment.range})
 				else
-					if sets.Weapons[state.WeaponMode.value] then
-						built_set = set_combine(built_set, sets.Weapons[state.WeaponMode.value])
-						if not TwoHand and not DualWield then
-							if sets.Weapons.Shield then
-								built_set = set_combine(built_set, sets.Weapons.Shield)
+					if sets.Weapons then
+						if sets.Weapons[state.WeaponMode.value] then
+							local defaultWeapons = set_combine(sets.Weapons[state.WeaponMode.value], {}) -- copy the set
+							if not TwoHand and not DualWield then
+								if sets.Weapons.Shield then
+									defaultWeapons = set_combine(defaultWeapons, sets.Weapons.Shield)
+								else warn('sets.Weapons.Shield not found!') end
 							end
-						end
-					end
+							for slot, item in pairs(defaultWeapons) do
+								built_set[slot] = built_set[slot] or defaultWeapons[slot] -- Take main/sub if in built_set, if not put in the defined default
+							end
+						else warn('sets.Weapons['..state.WeaponMode.value..'] not found!') end
+					else warn('sets.Weapons not found!') end
 				end
 				log('Midcast set equiping Offense Mode Gear')
 			end
@@ -1968,7 +1985,7 @@ do
 		-- Updates the TH status
 		local command = cmd:lower()
 		if command == 'update auto' then
-			local built_set = choose_set()
+			local built_set = choose_set(true)
 			if choose_set_custom then
 				built_set = set_combine(built_set, choose_set_custom())
 				equip(built_set)
@@ -2329,6 +2346,7 @@ do
 		send_command('unbind ^f11')
 		send_command('unbind ^f12')
 		send_command('unbind f9')
+		send_command('unbind ^f9')
 		send_command('unbind f10')
 		send_command('unbind f11')
 		send_command('unbind f12')
@@ -2352,6 +2370,7 @@ do
 		send_command('bind f11 gs c TreasureHunter')
 		send_command('bind f10 gs c AutoBuff')
 		send_command('bind f9 gs c WeaponMode')
+		send_command('bind ^f9 gs c WeaponLock')
 		send_command('bind ^f12 gs c JobMode')
 		send_command('bind ^f11 gs c JobMode2')
 
@@ -2360,6 +2379,7 @@ do
 		windower.add_to_chat(8,'TH Mode - '..string.format('[%s]','F11'))
 		windower.add_to_chat(8,'Auto Buff - '..string.format('[%s]','F10'))
 		windower.add_to_chat(8,'Weapon Mode - '..string.format('[%s]','F9')) 
+		windower.add_to_chat(8,'Weapon Lock - '..string.format('[%s]','Ctrl + F9'))
 		if UI_Name ~= '' then
 			windower.add_to_chat(8,UI_Name..' - '..string.format('[%s]','Ctrl + F12'))
 		end
@@ -3000,8 +3020,9 @@ do
 	-- This function is called to determine correct sets and not a built in gearswap call
 	-------------------------------------------------------------------------------------------------------------------
 
-	function choose_set()
+	function choose_set(mode_change) -- to know if we're changing from mode change, if so ignore the weapon lock
 		if buffactive['Sleep'] then return end
+		local mode_change = mode_change or false
 		local built_set = {}
 		-- Combat Checks
 		if player.status == "Engaged" then
@@ -3069,7 +3090,7 @@ do
 		-- Idle sets
 		else
 			if sets.Idle then
-				built_set = sets.Idle
+				built_set = set_combine(sets.Idle, {}) -- copy the set
 				-- Idle state
 				if sets.Idle[state.OffenseMode.value] then
 					built_set = set_combine(built_set, sets.Idle[state.OffenseMode.value])
@@ -3082,20 +3103,22 @@ do
 				end
 				-- Weapons
 				if state.WeaponMode.value ~= "Unlocked" then
-					if state.WeaponMode.value == "Locked" then
+					if state.WeaponMode.value == "Locked" or (state.WeaponLock.value == "ON" and not mode_change) then
 						built_set = set_combine(built_set, { main=player.equipment.main, sub = player.equipment.sub, range = player.equipment.range})
 						log(built_set)
 					else
 						if sets.Weapons then
 							if sets.Weapons[state.WeaponMode.value] then
-								built_set = set_combine(built_set, sets.Weapons[state.WeaponMode.value])
+								local defaultWeapons = sets.Weapons[state.WeaponMode.value]
+								if not TwoHand and not DualWield then
+									if sets.Weapons.Shield then
+										defaultWeapons = set_combine(defaultWeapons, sets.Weapons.Shield)
+									else warn('sets.Weapons.Shield not found!') end
+								end
+								for slot, item in pairs(defaultWeapons) do
+									built_set[slot] = built_set[slot] or defaultWeapons[slot] -- Take main/sub if in built_set, if not put in the defined default
+								end
 							else warn('sets.Weapons['..state.WeaponMode.value..'] not found!') end
-							-- Check for sub weapon
-							if not TwoHand and not DualWield then
-								if sets.Weapons.Shield then
-									built_set = set_combine(built_set, sets.Weapons.Shield)
-								else warn('sets.Weapons.Shield not found!') end
-							end
 						else warn('sets.Weapons not found!') end
 					end
 				end
