@@ -196,6 +196,12 @@ state.WeaponMode = M{['description']='Weapon Specific Mode'}
 state.WeaponMode:options('OFF','ON')
 state.WeaponMode:set('OFF')
 
+--Weapon Lock
+state.WeaponLock = {}
+state.WeaponLock = M{['description']='Weapon Lock'}
+state.WeaponLock:options('OFF','ON')
+state.WeaponLock:set('ON')
+
 --Job specific modes
 state.JobMode = {}
 state.JobMode = M{['description']='Job Specific Mode'}
@@ -967,16 +973,19 @@ do
 		-- Weapon Checks for precast
 		-- If it set to unlocked it will not swap the weapons even if defined in the built_set job lua
 		if state.WeaponMode.value ~= "Unlocked" then
-			if state.WeaponMode.value == "Locked" then
+			if state.WeaponMode.value == "Locked" or state.WeaponLock.value == "ON" then
 				built_set = set_combine(built_set, { main = player.equipment.main, sub = player.equipment.sub, range = player.equipment.range})
 			else
 				if sets.Weapons then
 					if sets.Weapons[state.WeaponMode.value] then
-						built_set = set_combine(built_set, sets.Weapons[state.WeaponMode.value])
+						local defaultWeapons = sets.Weapons[state.WeaponMode.value]
 						if not TwoHand and not DualWield then
 							if sets.Weapons.Shield then
-								built_set = set_combine(built_set, sets.Weapons.Shield)
+								defaultWeapons = set_combine(defaultWeapons, sets.Weapons.Shield)
 							else warn('sets.Weapons.Shield not found!') end
+						end
+						for slot, item in pairs(defaultWeapons) do
+							built_set[slot] = built_set[slot] or defaultWeapons[slot] -- Take main/sub if in built_set, if not put in the defined default
 						end
 					else warn('sets.Weapons['..state.WeaponMode.value..'] not found!') end
 				else warn('sets.Weapons not found!') end
@@ -2116,6 +2125,32 @@ do
 				coroutine.schedule(two_hand_check, .25)
 				return
 			end
+		elseif command:contains('weaponlock') then
+			if command == 'weaponlock' then
+				for i,v in ipairs(state.WeaponLock) do
+					if state.WeaponLock.value == v then
+						if state.WeaponLock.value ~= state.WeaponLock[#state.WeaponLock] then
+							state.WeaponLock:set(state.WeaponLock[i+1])
+						else
+							state.WeaponLock:set(state.WeaponLock[1])
+						end
+						info('Weapon Lock: ['..state.WeaponLock.value..']')
+						display_box_update()
+						coroutine.schedule(equip_set, .25)
+						coroutine.schedule(two_hand_check, .25)
+						return
+					end
+				end
+			else
+				local mode = {}
+				mode = string.split(cmd," ",2)
+				state.WeaponMode:set(mode[2])
+				info('Weapon Lock: ['..state.WeaponMode.value..']')
+				display_box_update()
+				coroutine.schedule(equip_set, .25)
+				coroutine.schedule(two_hand_check, .25)
+				return
+			end
 		elseif command:contains('jobmode2') then
 			if command == 'jobmode2' then
 				for i,v in ipairs(state.JobMode2) do
@@ -2488,11 +2523,12 @@ do
 		dialog[2] = {description = 'TH Mode', value = state.TreasureMode.value}
 		dialog[3] = {description = 'Auto Buff', value = state.AutoBuff.value}
 		dialog[4] = {description = 'DPS', value = state.WeaponMode.value}
+		dialog[5] = {description = 'Weapon Lock', value = state.WeaponLock.value}
 		if UI_Name ~= "" then
-			dialog[5] = {description = UI_Name, value = state.JobMode.value}
+			dialog[6] = {description = UI_Name, value = state.JobMode.value}
 		end
 		if UI_Name2 ~= "" then
-			dialog[6] = {description = UI_Name2, value = state.JobMode2.value}
+			dialog[7] = {description = UI_Name2, value = state.JobMode2.value}
 		end
 		local lines = T{}
 		for k, v in next, dialog do
