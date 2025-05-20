@@ -596,9 +596,6 @@ function precast_custom(spell)
 	if spell.english == 'Fold' then
 		equipSet = set_combine(equipSet, {hands={ name="Lanun Gants +3", augments={'Enhances "Fold" effect',}}})
     end
-	if spell.id == 123 or spell.type == 'CorsairRoll' then -- Double up and bypass weapon check
-		equipSet = set_combine(equipSet, sets.PhantomRoll)
-	end
 	equipSet = Job_Mode_Check(equipSet)
 	return equipSet
 end
@@ -608,9 +605,6 @@ function midcast_custom(spell)
 	if spell.english == 'Fold' then
 		equipSet = set_combine(equipSet, {hands={ name="Lanun Gants +3", augments={'Enhances "Fold" effect',}}})
     end
-	if spell.id == 123 or spell.type == 'CorsairRoll' then -- Double up and bypass weapon check
-		equipSet = set_combine(equipSet, sets.PhantomRoll)
-	end
 	equipSet = Job_Mode_Check(equipSet)
 	return equipSet
 end
