@@ -363,6 +363,9 @@ Ready_Debuff = S{'Dust Cloud','Sheep Song','Scream','Dream Flower','Roar','Gloeo
 -- Physical Ready moves that have Multi-Hit
 Ready_Multi = S{'Sweeping Gouge','Tickling Tendrils','Chomp Rush','Pentapeck','Wing Slap','Pecking Flurry'}
 
+No_Midcast = S{'JobAbility', 'WeaponSkill', 'Rune', 'Effusion', 'Waltz', 'Samba', 'Step', 'Ward', 'Scholar', 
+	'CorsairRoll', 'CorsairShot', 'Jig', 'Flourish1', 'Flourish2', 'Flourish3'}
+
 UI_Name = ''
 UI_Name2 = ''
 
@@ -1028,9 +1031,7 @@ do
 
 	function midcastequip(spell)
 		-- WeaponSkill
-		if spell.type == 'WeaponSkill' then return end
-		if spell.type == 'Item' then return end
-		if spell.type == 'JobAbility' then return end
+		if No_Midcast:contains(spell.type) then return end
 		if pet.isvalid and pet_midaction() then return end
 		--Default gearset
 		local built_set = {}
