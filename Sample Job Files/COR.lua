@@ -28,6 +28,9 @@ state.OffenseMode:set('TP')
 state.WeaponMode:options('Fomalhaut','Death Penalty', 'Savage Blade', 'Aeolian Edge', 'Evisceration')
 state.WeaponMode:set('Death Penalty')
 
+--Default for weapon lock
+state.WeaponLock:set('OFF')
+
 --Enable JobMode for UI.
 UI_Name = 'TP Mode'
 
