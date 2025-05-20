@@ -3044,7 +3044,9 @@ do
 								built_set = set_combine(built_set, sets.Weapons.Shield)
 							else warn('sets.Weapons.Shield not found!') end
 						elseif DualWield then
-							if sets.DualWield then
+							if sets.OffenseMode[state.OffenseMode.value].DualWield then
+								built_set = set_combine(built_set, sets.OffenseMode[state.OffenseMode.value].DualWield)
+							elseif sets.DualWield then
 								built_set = set_combine(built_set, sets.DualWield)
 							else warn('sets.DualWield not found!') end
 						end
